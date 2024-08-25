@@ -1,16 +1,19 @@
 package main
 
 import (
+	"flag"
 	"fmt"
+	"gameoflife/patterns"
 	"strings"
 	"time"
 )
 
-func printBoard(board [30][60]int) {
+func printBoard(board [30][60]int, generation int) {
 	fmt.Print("\033[H\033[2J") // Clear the screen
 	for i := 0; i < 30; i++ {
 		fmt.Println(join(board[i]))
 	}
+	fmt.Printf("generation count: %d", generation)
 }
 
 func join(line [60]int) string {
@@ -24,6 +27,13 @@ func join(line [60]int) string {
 	}
 
 	return sb.String()
+}
+
+func applyPattern(board [30][60]int, positions [][2]int) [30][60]int {
+	for _, pos := range positions {
+		board[pos[0]][pos[1]] = 1
+	}
+	return board
 }
 
 func neighborCount(board [30][60]int, x, y int) int {
@@ -72,46 +82,26 @@ func gameState(board [30][60]int) [30][60]int {
 
 func main() {
 	board := [30][60]int{}
-	// glider
-	// board[0][1] = 1
-	// board[1][2] = 1
-	// board[2][0] = 1
-	// board[2][1] = 1
-	// board[2][2] = 1
+	speed := flag.Int("speed", 80, "render speed in millisecond")
+	pattern := flag.String("pattern", "star", "choose patterns from lwss, star, glider")
+	flag.Parse()
 
-	// 2 Lightweight Spaceship (2LWSS)
-	board[10][11] = 1
-	board[10][12] = 1
-	board[10][13] = 1
-	board[11][10] = 1
-	board[11][14] = 1
-	board[12][14] = 1
-	board[13][10] = 1
-	board[13][13] = 1
-
-	board[10][21] = 1
-	board[10][22] = 1
-	board[10][23] = 1
-	board[11][20] = 1
-	board[11][24] = 1
-	board[12][24] = 1
-	board[13][20] = 1
-	board[13][23] = 1
-
-	// space ship
-	// board[15][30] = 1
-	// board[15][31] = 1
-	// board[15][32] = 1
-	// board[16][30] = 1
-	// board[16][32] = 1
-	// board[17][30] = 1
-	// board[17][32] = 1
+	switch *pattern {
+	case "lwss":
+		board = applyPattern(board, patterns.LWSS)
+	case "glider":
+		board = applyPattern(board, patterns.Glider)
+	default:
+		board = applyPattern(board, patterns.Star)
+	}
 
 	fmt.Print("\033[?25l")       // Hide cursor
 	defer fmt.Print("\033[?25h") // Show cursor when the program exits
+	generation := 1
 	for {
-		printBoard(board)
-		time.Sleep(time.Millisecond * 80)
+		printBoard(board, generation)
+		time.Sleep(time.Millisecond * time.Duration((*speed)))
 		board = gameState(board)
+		generation++
 	}
 }
